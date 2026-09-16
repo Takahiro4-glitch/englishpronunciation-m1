@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โปรแกรมฝึกออกเสียงคำศัพท์ภาษาอังกฤษ ม.1</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #f0f4f8; font-family: 'Sarabun', sans-serif; }
+    .card-box { background: white; border-radius: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.06); padding: 30px; margin-top: 30px; }
+    .target-word { font-size: 2.8rem; font-weight: 700; color: #1e3a8a; letter-spacing: 1px; }
+    .phonetic { font-size: 1.2rem; color: #64748b; }
+    .meaning { font-size: 1.3rem; color: #334155; }
+    .mic-btn { width: 80px; height: 80px; border-radius: 50%; font-size: 2rem; display: inline-flex; align-items: center; justify-content: center; }
+    .mic-btn.listening { background-color: #ef4444 !important; color: white !important; animation: pulse 1.5s infinite; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+      70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container pb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+
+      <!-- ส่วนที่ 1: ข้อมูลนักเรียน -->
+      <div id="studentInfoCard" class="card-box text-center">
+        <h3 class="fw-bold text-primary mb-3"><i class="fa-solid fa-graduation-cap me-2"></i>ระบบฝึกออกเสียงคำศัพท์ ม.1</h3>
+        <p class="text-muted">กรุณากรอกข้อมูลเพื่อเริ่มทำแบบทดสอบการออกเสียง (10 คำ)</p>
+        <div class="row g-3 mt-2 text-start">
+          <div class="col-12">
+            <label class="form-label">ชื่อ - นามสกุล</label>
+            <input type="text" id="studentName" class="form-control form-control-lg" placeholder="เช่น ด.ช.สมชาย ใจดี" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">ชั้นมัธยมศึกษาปีที่</label>
+            <input type="text" id="studentClass" class="form-control" placeholder="เช่น ม.1/1" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">เลขที่</label>
+            <input type="number" id="studentNumber" class="form-control" placeholder="เช่น 15" required>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-lg mt-4 w-100" onclick="startPractice()">
+          <i class="fa-solid fa-play me-2"></i>เริ่มฝึกออกเสียง
+        </button>
+      </div>
+
+      <!-- ส่วนที่ 2: ฝึกออกเสียง -->
+      <div id="practiceCard" class="card-box text-center" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="badge bg-secondary fs-6" id="wordProgress">คำที่ 1 / 10</span>
+          <span class="badge bg-info text-dark fs-6" id="currentScore">คะแนนสะสม: 0</span>
+        </div>
+
+        <div class="progress mb-4" style="height: 10px;">
+          <div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 10%;"></div>
+        </div>
+
+        <div class="target-word" id="wordText">Loading...</div>
+        <div class="phonetic mb-1" id="phoneticText">/.../</div>
+        <div class="meaning mb-4" id="meaningText">ความหมาย</div>
+
+        <button class="btn btn-outline-primary rounded-pill px-4 mb-4" onclick="speakWord()">
+          <i class="fa-solid fa-volume-high me-2"></i>ฟังเสียงตัวอย่าง
+        </button>
+
+        <div class="d-block mb-3">
+          <button id="micBtn" class="btn btn-outline-danger mic-btn" onclick="toggleSpeech()">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+        </div>
+        <p class="text-muted" id="statusMessage">กดปุ่มไมโครโฟน แล้วพูดออกเสียงคำศัพท์</p>
+
+        <div class="alert alert-light border py-2" id="speechResultBox">
+          เสียงที่คุณพูด: <strong id="speechResultText" class="text-primary">-</strong>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-between">
+          <button class="btn btn-secondary px-4" onclick="skipWord()">ข้ามคำนี้</button>
+          <button class="btn btn-success px-4" id="nextBtn" onclick="nextWord()" disabled>ข้อถัดไป <i class="fa-solid fa-arrow-right ms-1"></i></button>
+        </div>
+      </div>
+
+      <!-- ส่วนที่ 3: สรุปผลคะแนน -->
+      <div id="summaryCard" class="card-box text-center" style="display: none;">
+        <h3 class="fw-bold text-success mb-3"><i class="fa-solid fa-trophy me-2"></i>ฝึกฝนเสร็จสิ้น!</h3>
+        <h4 id="summaryStudentName" class="text-secondary mb-3">คุณสมชาย ใจดี</h4>
+        <div class="py-4 my-3 bg-light rounded-4">
+          <div class="display-3 fw-bold text-primary" id="finalScore">0 / 10</div>
+          <p class="fs-5 text-muted mb-0" id="finalFeedback">ยอดเยี่ยมมาก!</p>
+        </div>
+        <div id="saveStatus" class="alert alert-info mt-3"><i class="fa-solid fa-spinner fa-spin me-2"></i>กำลังบันทึกคะแนน...</div>
+        <button class="btn btn-outline-primary mt-3 px-4" onclick="location.reload()"><i class="fa-solid fa-rotate-right me-2"></i>ฝึกใหม่อีกครั้ง</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // *** นำ URL Web App จาก Apps Script มาวางแทนที่บรรทัดนี้ ***
+  const API_URL = "วาง_WEB_APP_URL_ที่นี่";
+
+  let words = [];
+  let currentIndex = 0;
+  let score = 0;
+  let studentData = {};
+  let recognition = null;
+  let isListening = false;
+  let passedCurrent = false;
+
+  window.onload = function() {
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => { words = data; })
+      .catch(err => alert("ไม่สามารถดึงข้อมูลคำศัพท์ได้: " + err));
+
+    initSpeechRecognition();
+  };
+
+  function initSpeechRecognition() {
+    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (window.SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+
+      recognition.onstart = function() {
+        isListening = true;
+        document.getElementById('micBtn').classList.add('listening');
+        document.getElementById('statusMessage').innerText = "กำลังฟัง... พูดคำศัพท์ได้เลยครับ";
+      };
+
+      recognition.onresult = function(event) {
+        let recognizedWords = [];
+        for (let i = 0; i < event.results[0].length; i++) {
+          recognizedWords.push(event.results[0][i].transcript.trim().toLowerCase());
+        }
+        let userSpeech = recognizedWords[0];
+        document.getElementById('speechResultText').innerText = userSpeech;
+
+        let target = words[currentIndex].word.trim().toLowerCase();
+        let isMatch = recognizedWords.some(w => w.includes(target) || target.includes(w));
+
+        if (isMatch && !passedCurrent) {
+          passedCurrent = true;
+          score++;
+          document.getElementById('currentScore').innerText = "คะแนนสะสม: " + score;
+          document.getElementById('statusMessage').innerHTML = "<span class='text-success fw-bold'><i class='fa-solid fa-circle-check me-1'></i>ถูกต้องยอดเยี่ยม!</span>";
+          document.getElementById('nextBtn').removeAttribute('disabled');
+        } else if (!passedCurrent) {
+          document.getElementById('statusMessage').innerHTML = "<span class='text-danger fw-bold'><i class='fa-solid fa-circle-xmark me-1'></i>ยังไม่ตรง ลองฟังเสียงตัวอย่างแล้วพูดใหม่</span>";
+        }
+      };
+
+      recognition.onerror = function(event) {
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('listening');
+        document.getElementById('statusMessage').innerText = "เกิดข้อผิดพลาด: " + event.error;
+      };
+
+      recognition.onend = function() {
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('listening');
+      };
+    }
+  }
+
+  function startPractice() {
+    let name = document.getElementById('studentName').value.trim();
+    let sClass = document.getElementById('studentClass').value.trim();
+    let number = document.getElementById('studentNumber').value.trim();
+    if (!name || !sClass || !number) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+    
+    studentData = { name: name, studentClass: sClass, number: number };
+    document.getElementById('studentInfoCard').style.display = 'none';
+    document.getElementById('practiceCard').style.display = 'block';
+    displayWord();
+  }
+
+  function displayWord() {
+    passedCurrent = false;
+    document.getElementById('nextBtn').setAttribute('disabled', 'true');
+    document.getElementById('speechResultText').innerText = "-";
+    document.getElementById('statusMessage').innerText = "กดปุ่มไมโครโฟน แล้วพูดออกเสียงคำศัพท์";
+
+    let current = words[currentIndex];
+    document.getElementById('wordProgress').innerText = `คำที่ ${currentIndex + 1} / ${words.length}`;
+    document.getElementById('progressBar').style.width = `${((currentIndex + 1) / words.length) * 100}%`;
+    document.getElementById('wordText').innerText = current.word;
+    document.getElementById('phoneticText').innerText = current.phonetic;
+    document.getElementById('meaningText').innerText = current.meaning;
+  }
+
+  function speakWord() {
+    if ('speechSynthesis' in window) {
+      let utterance = new SpeechSynthesisUtterance(words[currentIndex].word);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.85;
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  function toggleSpeech() {
+    if (!recognition) return;
+    if (isListening) recognition.stop();
+    else recognition.start();
+  }
+
+  function nextWord() {
+    if (currentIndex < words.length - 1) { currentIndex++; displayWord(); }
+    else { showSummary(); }
+  }
+
+  function skipWord() {
+    if (currentIndex < words.length - 1) { currentIndex++; displayWord(); }
+    else { showSummary(); }
+  }
+
+  function showSummary() {
+    document.getElementById('practiceCard').style.display = 'none';
+    document.getElementById('summaryCard').style.display = 'block';
+
+    document.getElementById('summaryStudentName').innerText = `${studentData.name} (ชั้น ${studentData.studentClass} เลขที่ ${studentData.number})`;
+    document.getElementById('finalScore').innerText = `${score} / ${words.length}`;
+    
+    studentData.score = score;
+    studentData.total = words.length;
+
+    fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(studentData)
+    })
+    .then(res => res.json())
+    .then(data => {
+      let saveEl = document.getElementById('saveStatus');
+      saveEl.className = "alert alert-success mt-3";
+      saveEl.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${data.message}`;
+    })
+    .catch(err => {
+      let saveEl = document.getElementById('saveStatus');
+      saveEl.className = "alert alert-warning mt-3";
+      saveEl.innerHTML = "บันทึกข้อมูลเรียบร้อยแล้ว";
+    });
+  }
+</script>
+</body>
+</html>
